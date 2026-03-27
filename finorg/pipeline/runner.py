@@ -94,6 +94,7 @@ def run_pipeline(config: PipelineConfig, start_phase: int = 1):
         from finorg.parallel import (
             detect_gpus, plan_instances, start_ollama_instance,
             preload_model, stop_ollama_instance, ParallelLLMPool, OllamaInstance,
+            cleanup_orphan_ollama, health_check_all,
         )
         try:
             console.print(Panel("Setting up GPU instances...", style="yellow"))
@@ -109,24 +110,41 @@ def run_pipeline(config: PipelineConfig, start_phase: int = 1):
                         planned.append(OllamaInstance(port=11435, gpu_ids=config.gpu_ids_deep, model=config.deep_model))
                 else:
                     planned = plan_instances(gpus, config.fast_model, config.deep_model)
+
+                # Clean up any orphaned processes on planned ports
+                planned_ports = [inst.port for inst in planned]
+                cleanup_orphan_ollama(planned_ports)
+
                 for inst in planned:
-                    console.print(f"  Starting :{inst.port} ({inst.model} on GPUs {inst.gpu_ids})...")
-                    if start_ollama_instance(inst):
+                    gpu_str = ",".join(str(g) for g in inst.gpu_ids) if inst.gpu_ids else "CPU"
+                    console.print(f"  Starting :{inst.port} ({inst.model} on GPUs [{gpu_str}])...")
+                    if start_ollama_instance(
+                        inst,
+                        num_parallel=config.llm_workers_per_instance,
+                        keep_alive="-1",  # Keep loaded for entire pipeline run
+                    ):
                         console.print(f"    Loading {inst.model}...")
                         if preload_model(inst):
                             ollama_instances.append(inst)
                             console.print("    [green]Ready[/green]")
                         else:
                             console.print("    [red]Model load failed[/red]")
+                            stop_ollama_instance(inst)
                     else:
                         console.print("    [red]Instance failed[/red]")
+
+                # Health check summary
+                health = health_check_all(ollama_instances)
                 fast_insts = [i for i in ollama_instances if i.model == config.fast_model]
                 deep_insts = [i for i in ollama_instances if i.model == config.deep_model]
                 if fast_insts:
                     fast_pool = ParallelLLMPool(fast_insts, config.llm_workers_per_instance)
                 if deep_insts:
                     deep_pool = ParallelLLMPool(deep_insts, config.llm_workers_per_instance)
-                console.print(f"  [green]{len(fast_insts)} fast + {len(deep_insts)} deep instances[/green]")
+                console.print(f"  [green]{len(fast_insts)} fast + {len(deep_insts)} deep instances ready[/green]")
+                for port, info in health.items():
+                    status = "loaded" if info["model_loaded"] else ("alive" if info["alive"] else "down")
+                    console.print(f"    :{port} \u2014 {status}")
             else:
                 console.print("  [yellow]No GPUs detected[/yellow]")
         except Exception as e:

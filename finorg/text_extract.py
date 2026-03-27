@@ -103,10 +103,11 @@ def extract_text_marker(pdf_path: Path) -> dict[int, str]:
 def extract_text_docling(pdf_path: Path) -> dict[int, str]:
     """Convert PDF via docling. Returns {1: text, 2: text, ...} (1-indexed).
 
-    Docling's ConversionResult has a .document (DoclingDocument) with:
-    - .pages: dict mapping page numbers to PageItem
-    - .iterate_items(page_no=N): yields items for a specific page
+    Docling's ConversionResult.document is a DoclingDocument with:
+    - .pages: dict[int, PageItem] mapping page numbers to page metadata
+    - .iterate_items(page_no=N): yields (item, level) for a specific page
     - .export_to_markdown(): full document as markdown string
+    Each TextItem has .text (str) and .prov (list of ProvenanceItem with .page_no).
     """
     try:
         from docling.document_converter import DocumentConverter
@@ -115,60 +116,62 @@ def extract_text_docling(pdf_path: Path) -> dict[int, str]:
         conv_result = converter.convert(str(pdf_path))
         doc = conv_result.document
 
+        # Import TextItem for proper type checking (preferred over hasattr)
+        try:
+            from docling_core.types.doc import TextItem
+            has_text_item_type = True
+        except ImportError:
+            has_text_item_type = False
+
         pages = {}
 
-        # Method 1: Use iterate_items with page_no filtering (most reliable)
+        # Method 1: Use iterate_items with page_no filtering (recommended by docs)
         if hasattr(doc, "pages") and doc.pages:
-            page_numbers = sorted(doc.pages.keys()) if isinstance(doc.pages, dict) else range(1, len(doc.pages) + 1)
+            page_numbers = sorted(doc.pages.keys()) if isinstance(doc.pages, dict) else list(range(1, len(doc.pages) + 1))
             for page_no in page_numbers:
                 page_texts = []
                 try:
                     for item, _level in doc.iterate_items(page_no=page_no):
-                        if hasattr(item, "text") and item.text:
+                        if has_text_item_type and isinstance(item, TextItem):
+                            if item.text:
+                                page_texts.append(item.text)
+                        elif hasattr(item, "text") and item.text:
                             page_texts.append(item.text)
-                        elif hasattr(item, "export_to_markdown"):
-                            md = item.export_to_markdown()
-                            if md:
-                                page_texts.append(md)
                 except (TypeError, AttributeError):
-                    # iterate_items may not support page_no in older versions
+                    # iterate_items may not support page_no kwarg in older versions
                     pass
                 if page_texts:
                     pages[int(page_no)] = "\n".join(page_texts)
 
-        # Method 2: Fallback — iterate all items and filter by provenance
+        # Method 2: Fallback — iterate all items and filter by provenance page_no
         if not pages:
             try:
+                page_parts = {}
                 for item, _level in doc.iterate_items():
+                    text = ""
+                    if has_text_item_type and isinstance(item, TextItem):
+                        text = item.text or ""
+                    elif hasattr(item, "text") and item.text:
+                        text = item.text
+                    if not text:
+                        continue
                     if hasattr(item, "prov") and item.prov:
                         for prov in item.prov:
-                            if hasattr(prov, "page_no") and prov.page_no:
+                            if hasattr(prov, "page_no") and prov.page_no is not None:
                                 pg = int(prov.page_no)
-                                text = ""
-                                if hasattr(item, "text") and item.text:
-                                    text = item.text
-                                elif hasattr(item, "export_to_markdown"):
-                                    text = item.export_to_markdown() or ""
-                                if text:
-                                    pages.setdefault(pg, [])
-                                    if isinstance(pages[pg], list):
-                                        pages[pg].append(text)
-                # Join lists into strings
-                for pg in pages:
-                    if isinstance(pages[pg], list):
-                        pages[pg] = "\n".join(pages[pg])
+                                page_parts.setdefault(pg, []).append(text)
+                                break  # only assign to first provenance page
+                pages = {pg: "\n".join(parts) for pg, parts in page_parts.items() if parts}
             except (TypeError, AttributeError):
                 pass
 
-        # Method 3: Last resort — full document export
+        # Method 3: Last resort — full document export as markdown
         if not pages:
             full_text = ""
             if hasattr(doc, "export_to_markdown"):
                 full_text = doc.export_to_markdown()
             elif hasattr(doc, "export_to_text"):
                 full_text = doc.export_to_text()
-            else:
-                full_text = str(doc)
             if full_text:
                 pages[1] = full_text
 

@@ -29,6 +29,8 @@ def _classify_boundary_item(page_entry: dict, ollama_url: str) -> dict:
         model=model,
         system=BOUNDARY_SYSTEM_PROMPT,
         prompt=make_boundary_user_prompt(page_text),
+        temperature=0.0,
+        num_predict=512,
     )
 
     entry = {k: v for k, v in page_entry.items() if not k.startswith("_")}

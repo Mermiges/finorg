@@ -32,6 +32,8 @@ def _classify_document_item(doc_group: dict, ollama_url: str) -> dict:
         model=model,
         system=CLASSIFY_SYSTEM_PROMPT,
         prompt=make_classify_user_prompt(full_text, max_chars),
+        temperature=0.0,
+        num_predict=1024,
     )
 
     entry = {k: v for k, v in doc_group.items() if not k.startswith("_")}

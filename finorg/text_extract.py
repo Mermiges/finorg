@@ -16,8 +16,16 @@ def _get_marker_converter():
         return _marker_converter
     from marker.converters.pdf import PdfConverter
     from marker.models import create_model_dict
+    from marker.config.parser import ConfigParser
     _marker_models = create_model_dict()
-    _marker_converter = PdfConverter(artifact_dict=_marker_models)
+    # Enable paginate_output so marker inserts page separators we can split on
+    config_parser = ConfigParser({"paginate_output": True, "disable_image_extraction": True})
+    _marker_converter = PdfConverter(
+        artifact_dict=_marker_models,
+        config=config_parser.generate_config_dict(),
+        processor_list=config_parser.get_processors(),
+        renderer=config_parser.get_renderer(),
+    )
     return _marker_converter
 
 
@@ -56,36 +64,33 @@ def extract_text_marker(pdf_path: Path) -> dict[int, str]:
             except (ImportError, Exception):
                 full_text = str(rendered)
 
-        # Try to get per-page metadata from rendered.metadata
-        # Marker doesn't provide clean per-page text, so we return the whole
-        # document as page 1 text. For boundary/classify purposes this is fine
-        # since marker is only used as OCR fallback for sparse pages.
         if not full_text:
             return {}
 
-        # If metadata has page count, split evenly as rough approximation.
-        # Otherwise return all text as page 1.
+        # With paginate_output=True, marker inserts page separators:
+        # "\n\n{PAGE_NUMBER}\n" followed by 48 dashes "------------------------------------------------"
+        # Split on this pattern to get per-page text.
+        import re
         pages = {}
-        page_count = 1
-        if hasattr(rendered, "metadata") and isinstance(rendered.metadata, dict):
-            page_count = rendered.metadata.get("page_count", 1) or 1
+        page_sep_pattern = re.compile(r'\n\n(\d+)\n-{48}\n')
+        parts = page_sep_pattern.split(full_text)
 
-        if page_count == 1:
-            pages[1] = full_text
+        if len(parts) >= 3:
+            # parts = [text_before_first_sep, page_num, text, page_num, text, ...]
+            # First chunk (before any separator) belongs to page 1
+            if parts[0].strip():
+                pages[1] = parts[0].strip()
+            for i in range(1, len(parts) - 1, 2):
+                try:
+                    page_no = int(parts[i])
+                except (ValueError, IndexError):
+                    continue
+                text_chunk = parts[i + 1].strip() if i + 1 < len(parts) else ""
+                if text_chunk:
+                    pages[page_no] = text_chunk
         else:
-            # Split by form feed or page separator patterns
-            import re
-            chunks = re.split(r'\f|\n---\n|\n\*{3,}\n', full_text)
-            if len(chunks) >= page_count:
-                for i in range(page_count):
-                    pages[i + 1] = chunks[i]
-            else:
-                # Can't reliably split — distribute evenly
-                chars_per_page = max(1, len(full_text) // page_count)
-                for i in range(page_count):
-                    start = i * chars_per_page
-                    end = start + chars_per_page if i < page_count - 1 else len(full_text)
-                    pages[i + 1] = full_text[start:end]
+            # No page separators found — return all text as page 1
+            pages[1] = full_text
 
         return pages
     except ImportError:

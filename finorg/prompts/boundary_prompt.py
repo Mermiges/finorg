@@ -55,4 +55,4 @@ Respond with ONLY a valid JSON object matching this exact schema:
 
 def make_boundary_user_prompt(page_text: str) -> str:
     text = page_text[:4000].strip()
-    return f"Analyze this page and determine if it is the first page of a new financial document.\n\nPAGE TEXT:\n{text}"
+    return f"Analyze this page and determine if it is the first page of a new financial document.\n\n<page_text>\n{text}\n</page_text>"

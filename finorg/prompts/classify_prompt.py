@@ -59,4 +59,4 @@ Respond with ONLY a valid JSON object matching this exact schema:
 
 def make_classify_user_prompt(document_text: str, max_chars: int = 10000) -> str:
     text = document_text[:max_chars].strip()
-    return f"Classify this financial document and extract all available metadata.\n\nDOCUMENT TEXT:\n{text}"
+    return f"Classify this financial document and extract all available metadata.\n\n<document_text>\n{text}\n</document_text>"

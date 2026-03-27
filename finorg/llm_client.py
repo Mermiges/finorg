@@ -53,8 +53,9 @@ class OllamaClient:
                         "options": {
                             "temperature": temperature,
                             "num_predict": num_predict,
-                            "top_p": 0.9,
-                            "repeat_penalty": 1.1,
+                            "top_p": 0.8,
+                            "top_k": 20,
+                            "repeat_penalty": 1.05,
                         },
                     },
                     timeout=600,

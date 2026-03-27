@@ -13,7 +13,7 @@ logger = logging.getLogger("finorg")
 
 def _split_one(args: tuple) -> dict:
     """Split one document out of a source PDF. Top-level for pickling."""
-    import fitz
+    import pymupdf
     import hashlib
     from pathlib import Path as P
 
@@ -21,13 +21,11 @@ def _split_one(args: tuple) -> dict:
     output_path = P(output_str)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     try:
-        src = fitz.open(source_str)
-        dst = fitz.open()
-        dst.insert_pdf(src, from_page=start_pg - 1, to_page=end_pg - 1)
-        dst.save(str(output_path))
-        page_count = len(dst)
-        dst.close()
-        src.close()
+        with pymupdf.open(source_str) as src:
+            with pymupdf.open() as dst:
+                dst.insert_pdf(src, from_page=start_pg - 1, to_page=end_pg - 1)
+                dst.save(str(output_path))
+                page_count = len(dst)
         h = hashlib.sha256()
         with open(str(output_path), "rb") as f:
             while True:

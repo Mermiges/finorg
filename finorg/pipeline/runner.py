@@ -38,7 +38,7 @@ def check_prerequisites(config: PipelineConfig):
     else:
         console.print(f"  \u2717 Ollama not responding at {config.ollama_url}")
 
-    for pkg, name in [("fitz", "PyMuPDF"), ("PIL", "Pillow"), ("tqdm", "tqdm"),
+    for pkg, name in [("pymupdf", "PyMuPDF"), ("PIL", "Pillow"), ("tqdm", "tqdm"),
                       ("rich", "rich"), ("pydantic", "pydantic"), ("orjson", "orjson"),
                       ("click", "click"), ("pathvalidate", "pathvalidate"), ("xxhash", "xxhash")]:
         try:

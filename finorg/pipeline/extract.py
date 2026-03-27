@@ -13,7 +13,7 @@ logger = logging.getLogger("finorg")
 
 def _extract_one_page(args: tuple) -> dict:
     """Extract text from a single PDF page. Top-level for pickling."""
-    import fitz
+    import pymupdf
     import hashlib
     from pathlib import Path as P
 
@@ -22,10 +22,9 @@ def _extract_one_page(args: tuple) -> dict:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     text = ""
     try:
-        doc = fitz.open(pdf_path_str)
-        if page_0idx < len(doc):
-            text = doc[page_0idx].get_text("text")
-        doc.close()
+        with pymupdf.open(pdf_path_str) as doc:
+            if page_0idx < len(doc):
+                text = doc[page_0idx].get_text("text")
     except Exception:
         text = ""
     output_path.write_text(text, encoding="utf-8")

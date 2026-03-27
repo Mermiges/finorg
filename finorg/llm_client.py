@@ -103,6 +103,12 @@ class OllamaClient:
                             "top_p": 0.8,
                             "top_k": 20,
                             "repeat_penalty": 1.05,
+                            # Explicit stop tokens for Qwen 2.5 — guards against
+                            # known infinite generation bug (ollama/ollama#7166)
+                            "stop": [
+                                "<|im_end|>",
+                                "<|endoftext|>",
+                            ],
                         },
                     },
                     timeout=600,

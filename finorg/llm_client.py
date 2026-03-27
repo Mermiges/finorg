@@ -28,17 +28,20 @@ class OllamaClient:
         return any(model in m for m in self.list_models())
 
     def generate_json(self, model, system, prompt, temperature=0.1,
-                      num_predict=2048, max_retries=2) -> dict:
+                      num_predict=2048, json_schema=None, max_retries=2) -> dict:
         return self._do_generate(self.base_url, model, system, prompt,
-                                 temperature, num_predict, max_retries)
+                                 temperature, num_predict, json_schema, max_retries)
 
     def generate_json_at(self, url, model, system, prompt, temperature=0.1,
-                         num_predict=2048, max_retries=2) -> dict:
+                         num_predict=2048, json_schema=None, max_retries=2) -> dict:
         return self._do_generate(url.rstrip("/"), model, system, prompt,
-                                 temperature, num_predict, max_retries)
+                                 temperature, num_predict, json_schema, max_retries)
 
     def _do_generate(self, base, model, system, prompt, temperature,
-                     num_predict, max_retries) -> dict:
+                     num_predict, json_schema, max_retries) -> dict:
+        # Use schema-based format if provided (Ollama v0.5+), else plain "json"
+        fmt = json_schema if json_schema else "json"
+
         raw = ""
         for attempt in range(max_retries + 1):
             try:
@@ -49,7 +52,7 @@ class OllamaClient:
                         "system": system,
                         "prompt": prompt,
                         "stream": False,
-                        "format": "json",
+                        "format": fmt,
                         "options": {
                             "temperature": temperature,
                             "num_predict": num_predict,

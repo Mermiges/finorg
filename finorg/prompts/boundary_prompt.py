@@ -53,6 +53,35 @@ Respond with ONLY a valid JSON object matching this exact schema:
 {"is_first_page": bool, "confidence": float, "document_type": string, "institution_name": string or null, "statement_period": string or null, "account_last4": string or null, "reasoning": string}"""
 
 
+BOUNDARY_JSON_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "is_first_page": {"type": "boolean"},
+        "confidence": {"type": "number"},
+        "document_type": {
+            "type": "string",
+            "enum": [
+                "bank_statement", "checking_statement", "savings_statement",
+                "retirement_statement", "401k_statement", "ira_statement",
+                "pension_statement", "brokerage_statement", "investment_statement",
+                "tsp_statement", "credit_card_statement", "mortgage_statement",
+                "loan_statement", "heloc_statement", "tax_document", "w2", "1099",
+                "pay_stub", "insurance_statement", "social_security_statement",
+                "va_benefits_statement", "military_les", "correspondence", "unknown",
+            ],
+        },
+        "institution_name": {"type": ["string", "null"]},
+        "statement_period": {"type": ["string", "null"]},
+        "account_last4": {"type": ["string", "null"]},
+        "reasoning": {"type": "string"},
+    },
+    "required": [
+        "is_first_page", "confidence", "document_type",
+        "institution_name", "statement_period", "account_last4", "reasoning",
+    ],
+}
+
+
 def make_boundary_user_prompt(page_text: str) -> str:
     text = page_text[:4000].strip()
     return f"Analyze this page and determine if it is the first page of a new financial document.\n\n<page_text>\n{text}\n</page_text>"

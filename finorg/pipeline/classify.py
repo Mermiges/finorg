@@ -15,7 +15,7 @@ def _classify_document_item(doc_group: dict, ollama_url: str) -> dict:
     from pathlib import Path as P
 
     from finorg.llm_client import OllamaClient
-    from finorg.prompts.classify_prompt import CLASSIFY_SYSTEM_PROMPT, make_classify_user_prompt
+    from finorg.prompts.classify_prompt import CLASSIFY_SYSTEM_PROMPT, CLASSIFY_JSON_SCHEMA, make_classify_user_prompt
 
     full_text = ""
     for pg in doc_group.get("pages", []):
@@ -34,6 +34,7 @@ def _classify_document_item(doc_group: dict, ollama_url: str) -> dict:
         prompt=make_classify_user_prompt(full_text, max_chars),
         temperature=0.0,
         num_predict=1024,
+        json_schema=CLASSIFY_JSON_SCHEMA,
     )
 
     entry = {k: v for k, v in doc_group.items() if not k.startswith("_")}

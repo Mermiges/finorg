@@ -15,7 +15,7 @@ def _classify_boundary_item(page_entry: dict, ollama_url: str) -> dict:
     from pathlib import Path as P
 
     from finorg.llm_client import OllamaClient
-    from finorg.prompts.boundary_prompt import BOUNDARY_SYSTEM_PROMPT, make_boundary_user_prompt
+    from finorg.prompts.boundary_prompt import BOUNDARY_SYSTEM_PROMPT, BOUNDARY_JSON_SCHEMA, make_boundary_user_prompt
 
     try:
         page_text = P(page_entry["text_file"]).read_text(encoding="utf-8", errors="replace")
@@ -31,6 +31,7 @@ def _classify_boundary_item(page_entry: dict, ollama_url: str) -> dict:
         prompt=make_boundary_user_prompt(page_text),
         temperature=0.0,
         num_predict=512,
+        json_schema=BOUNDARY_JSON_SCHEMA,
     )
 
     entry = {k: v for k, v in page_entry.items() if not k.startswith("_")}

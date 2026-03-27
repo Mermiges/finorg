@@ -57,6 +57,58 @@ Respond with ONLY a valid JSON object matching this exact schema:
 {"document_type": string, "category_folder": string, "institution_name": string or null, "account_type": string or null, "account_number_last4": string or null, "account_holder_name": string or null, "statement_start_date": string or null, "statement_end_date": string or null, "statement_period_label": string or null, "opening_balance": number or null, "closing_balance": number or null, "confidence": float, "proposed_filename": string, "notes": string or null}"""
 
 
+CLASSIFY_JSON_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "document_type": {
+            "type": "string",
+            "enum": [
+                "bank_statement", "checking_statement", "savings_statement",
+                "retirement_statement", "401k_statement", "ira_statement",
+                "pension_statement", "brokerage_statement", "investment_statement",
+                "tsp_statement", "credit_card_statement", "mortgage_statement",
+                "loan_statement", "heloc_statement", "tax_return", "w2", "1099",
+                "pay_stub", "insurance_statement", "social_security_statement",
+                "va_benefits_statement", "military_les", "other", "unknown",
+            ],
+        },
+        "category_folder": {
+            "type": "string",
+            "enum": [
+                "Bank_Statements", "Retirement_Accounts", "Brokerage_Statements",
+                "TSP_Statements", "Credit_Card_Statements", "Mortgage_Statements",
+                "Uncategorized",
+            ],
+        },
+        "institution_name": {"type": ["string", "null"]},
+        "account_type": {
+            "type": ["string", "null"],
+            "enum": [
+                "checking", "savings", "credit_card", "mortgage", "brokerage",
+                "retirement_401k", "retirement_ira", "tsp_traditional", "tsp_roth",
+                "pension", "loan", "heloc", "other", None,
+            ],
+        },
+        "account_number_last4": {"type": ["string", "null"]},
+        "account_holder_name": {"type": ["string", "null"]},
+        "statement_start_date": {"type": ["string", "null"]},
+        "statement_end_date": {"type": ["string", "null"]},
+        "statement_period_label": {"type": ["string", "null"]},
+        "opening_balance": {"type": ["number", "null"]},
+        "closing_balance": {"type": ["number", "null"]},
+        "confidence": {"type": "number"},
+        "proposed_filename": {"type": "string"},
+        "notes": {"type": ["string", "null"]},
+    },
+    "required": [
+        "document_type", "category_folder", "institution_name", "account_type",
+        "account_number_last4", "account_holder_name", "statement_start_date",
+        "statement_end_date", "statement_period_label", "opening_balance",
+        "closing_balance", "confidence", "proposed_filename", "notes",
+    ],
+}
+
+
 def make_classify_user_prompt(document_text: str, max_chars: int = 10000) -> str:
     text = document_text[:max_chars].strip()
     return f"Classify this financial document and extract all available metadata.\n\n<document_text>\n{text}\n</document_text>"

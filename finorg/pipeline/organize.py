@@ -57,7 +57,7 @@ def run_organize(config: PipelineConfig, doc_groups: list[dict], log) -> list[di
         conf = g.get("confidence", 0) or 0
         pf = g.get("proposed_filename") or ""
         if (conf < config.confidence_threshold or cat == "Uncategorized"
-                or pf.startswith("NODATE") or pf.startswith("Unknown")):
+                or pf.startswith("NODATE") or pf.startswith("Unknown") or "_Unknown_" in pf):
             g["needs_review"] = True
 
     save_json(config.working_dir / "metadata" / "document_groups.json", doc_groups)

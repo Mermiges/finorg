@@ -51,8 +51,9 @@ def run_extraction(config: PipelineConfig, inventory: list[dict], log) -> list[d
     for pdf_info in inventory:
         pdf_path = pdf_info["path"]
         stem = sanitize_filename(Path(pdf_path).stem)
+        pdf_id = hashlib.sha1(str(Path(pdf_path).resolve()).encode("utf-8")).hexdigest()[:10]
         for page_0idx in range(pdf_info["page_count"]):
-            out = str(config.working_dir / "page_text" / f"{stem}_p{page_0idx + 1:04d}.txt")
+            out = str(config.working_dir / "page_text" / f"{stem}_{pdf_id}_p{page_0idx + 1:04d}.txt")
             tasks.append((pdf_path, page_0idx, out))
 
     if config.parallel and len(tasks) > 10:

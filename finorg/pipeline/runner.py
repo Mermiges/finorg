@@ -201,6 +201,15 @@ def run_pipeline(config: PipelineConfig, start_phase: int = 1):
             from finorg.pipeline.classify import run_classification
             doc_groups = run_classification(config, doc_groups, log, parallel_pool=deep_pool)
             console.print(f"  Done \u2014 {time.time() - t:.1f}s")
+        else:
+            if start_phase == 7:
+                doc_groups = load_metadata(config.working_dir, "deep_classifications") or doc_groups
+            else:
+                doc_groups = (
+                    load_metadata(config.working_dir, "document_groups")
+                    or load_metadata(config.working_dir, "deep_classifications")
+                    or doc_groups
+                )
 
         if start_phase <= 7:
             console.print(Panel("Phase 7/9: Dedup", style="cyan"))

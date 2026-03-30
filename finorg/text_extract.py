@@ -7,6 +7,8 @@ logger = logging.getLogger("finorg")
 
 _marker_models = None
 _marker_converter = None
+_marker_cache: dict[str, dict[int, str]] = {}
+_docling_cache: dict[str, dict[int, str]] = {}
 
 
 def _get_marker_converter():
@@ -42,6 +44,10 @@ def extract_text_marker(pdf_path: Path) -> dict[int, str]:
     containing the full converted text. We split on page breaks if present,
     otherwise return the whole text under page 1.
     """
+    key = str(pdf_path.resolve())
+    if key in _marker_cache:
+        return _marker_cache[key]
+
     try:
         converter = _get_marker_converter()
         rendered = converter(str(pdf_path))
@@ -65,7 +71,8 @@ def extract_text_marker(pdf_path: Path) -> dict[int, str]:
                 full_text = str(rendered)
 
         if not full_text:
-            return {}
+            _marker_cache[key] = {}
+            return _marker_cache[key]
 
         # With paginate_output=True, marker inserts page separators:
         # "\n\n{PAGE_NUMBER}\n" followed by 48 dashes "------------------------------------------------"
@@ -92,7 +99,8 @@ def extract_text_marker(pdf_path: Path) -> dict[int, str]:
             # No page separators found — return all text as page 1
             pages[1] = full_text
 
-        return pages
+        _marker_cache[key] = pages
+        return _marker_cache[key]
     except ImportError:
         raise
     except Exception as e:
@@ -109,6 +117,10 @@ def extract_text_docling(pdf_path: Path) -> dict[int, str]:
     - .export_to_markdown(): full document as markdown string
     Each TextItem has .text (str) and .prov (list of ProvenanceItem with .page_no).
     """
+    key = str(pdf_path.resolve())
+    if key in _docling_cache:
+        return _docling_cache[key]
+
     try:
         from docling.document_converter import DocumentConverter
 
@@ -175,7 +187,8 @@ def extract_text_docling(pdf_path: Path) -> dict[int, str]:
             if full_text:
                 pages[1] = full_text
 
-        return pages
+        _docling_cache[key] = pages
+        return _docling_cache[key]
     except ImportError:
         raise
     except Exception as e:

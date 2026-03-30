@@ -19,7 +19,13 @@ def run_grouping(config: PipelineConfig, classifications: list[dict], log) -> li
     doc_counter = 0
 
     for entry in sorted_cls:
-        if entry.get("is_first_page", False) or current is None:
+        starts_new_group = (
+            current is None
+            or entry["source_pdf"] != current["source_pdf"]
+            or entry["page_number"] == 1
+            or entry.get("is_first_page", False)
+        )
+        if starts_new_group:
             if current is not None:
                 groups.append(current)
             doc_counter += 1

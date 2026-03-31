@@ -68,7 +68,13 @@ def run_extraction(config: PipelineConfig, inventory: list[dict], log) -> list[d
         try:
             from finorg.text_extract import extract_text
             for entry in tqdm(sparse, desc="OCR"):
-                new_text = extract_text(Path(entry["source_pdf"]), entry["page_number"], engine=config.ocr_engine)
+                new_text = extract_text(
+                    Path(entry["source_pdf"]),
+                    entry["page_number"],
+                    engine=config.ocr_engine,
+                    model_id=config.ocr_model,
+                    cache_dir=str(config.ocr_cache_dir) if config.ocr_cache_dir else None,
+                )
                 if new_text and len(new_text) > entry["char_count"]:
                     Path(entry["text_file"]).write_text(new_text, encoding="utf-8")
                     entry["char_count"] = len(new_text)

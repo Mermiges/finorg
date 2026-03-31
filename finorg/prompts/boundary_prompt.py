@@ -1,4 +1,4 @@
-BOUNDARY_SYSTEM_PROMPT = """You are a financial document page boundary detector. Your task is to determine whether a given page is the FIRST page of a new financial document or a CONTINUATION of the previous document.
+BOUNDARY_SYSTEM_PROMPT = """You are a legal and financial document page boundary detector. Your task is to determine whether a given page is the FIRST page of a new document or a CONTINUATION of the previous document.
 
 The text you receive was extracted via OCR or PDF text extraction and may contain recognition errors, formatting artifacts, or missing characters.
 
@@ -30,7 +30,7 @@ The text you receive was extracted via OCR or PDF text extraction and may contai
 - Page starts mid-sentence or mid-table
 
 ## Document Type Values
-Use exactly one of: bank_statement, checking_statement, savings_statement, retirement_statement, 401k_statement, ira_statement, pension_statement, brokerage_statement, investment_statement, tsp_statement, credit_card_statement, mortgage_statement, loan_statement, heloc_statement, tax_document, w2, 1099, pay_stub, insurance_statement, social_security_statement, va_benefits_statement, military_les, correspondence, unknown
+Use exactly one of: bank_statement, checking_statement, savings_statement, retirement_statement, 401k_statement, ira_statement, pension_statement, brokerage_statement, investment_statement, tsp_statement, credit_card_statement, mortgage_statement, loan_statement, heloc_statement, tax_document, w2, 1099, pay_stub, complaint, motion, order, discovery, affidavit, correspondence, medical_record, parenting, photo, unknown
 
 ## Examples
 
@@ -66,8 +66,9 @@ BOUNDARY_JSON_SCHEMA = {
                 "pension_statement", "brokerage_statement", "investment_statement",
                 "tsp_statement", "credit_card_statement", "mortgage_statement",
                 "loan_statement", "heloc_statement", "tax_document", "w2", "1099",
-                "pay_stub", "insurance_statement", "social_security_statement",
-                "va_benefits_statement", "military_les", "correspondence", "unknown",
+                "pay_stub", "complaint", "motion", "order", "discovery",
+                "affidavit", "correspondence", "medical_record", "parenting",
+                "photo", "unknown",
             ],
         },
         "institution_name": {"type": ["string", "null"]},
@@ -84,4 +85,4 @@ BOUNDARY_JSON_SCHEMA = {
 
 def make_boundary_user_prompt(page_text: str) -> str:
     text = page_text[:4000].strip()
-    return f"Analyze this page and determine if it is the first page of a new financial document.\n\n<page_text>\n{text}\n</page_text>"
+    return f"Analyze this page and determine if it is the first page of a new legal or financial document.\n\n<page_text>\n{text}\n</page_text>"

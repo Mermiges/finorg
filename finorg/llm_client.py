@@ -29,6 +29,15 @@ def _make_session(pool_size: int = _SESSION_POOL_SIZE) -> requests.Session:
     return session
 
 
+def _strip_json_fences(raw: str) -> str:
+    text = raw.strip()
+    if text.startswith("```"):
+        lines = text.splitlines()
+        if len(lines) >= 3:
+            text = "\n".join(lines[1:-1]).strip()
+    return text
+
+
 class OllamaClient:
     def __init__(self, base_url: str = "http://localhost:11434"):
         self.base_url = base_url.rstrip("/")
@@ -95,6 +104,7 @@ class OllamaClient:
                         "system": system,
                         "prompt": prompt,
                         "stream": False,
+                        "think": False,
                         "format": fmt,
                         "keep_alive": "-1",  # Keep model loaded for batch processing
                         "options": {
@@ -134,7 +144,7 @@ class OllamaClient:
                             "raw": r.text[:500]}
 
                 raw = r.json().get("response", "")
-                return json.loads(raw)
+                return json.loads(_strip_json_fences(raw))
 
             except json.JSONDecodeError:
                 if attempt < max_retries:

@@ -9,7 +9,7 @@ logger = logging.getLogger("finorg")
 
 
 def run_dedup(config: PipelineConfig, doc_groups: list[dict], log) -> list[dict]:
-    duplicates_dir = config.output_dir / "duplicates"
+    duplicates_dir = config.duplicates_dir
     duplicates_dir.mkdir(parents=True, exist_ok=True)
     dedup_log = []
 

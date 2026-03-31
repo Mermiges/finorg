@@ -21,4 +21,20 @@ setup(
         "pathvalidate",
         "xxhash",
     ],
+    extras_require={
+        "lightonocr": [
+            "transformers>=5.0.0",
+            "accelerate>=1.10.0",
+            "huggingface_hub>=1.0.0",
+        ],
+        "docling": [
+            "docling",
+        ],
+        "marker": [
+            "marker-pdf",
+        ],
+        "dev": [
+            "pytest",
+        ],
+    },
 )

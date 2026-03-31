@@ -10,13 +10,26 @@ from finorg.utils import save_json, load_json
 logger = logging.getLogger("finorg")
 
 
+def _should_skip_pdf(config: PipelineConfig, pdf_path: Path) -> bool:
+    resolved = pdf_path.resolve()
+    skip_roots = [config.output_dir.resolve(), config.working_dir.resolve()]
+    for root in skip_roots:
+        try:
+            resolved.relative_to(root)
+            return True
+        except ValueError:
+            continue
+    return False
+
+
 def run_inventory(config: PipelineConfig, log) -> list[dict]:
     meta_path = config.working_dir / "metadata" / "pdf_inventory.json"
     if config.resume and meta_path.exists():
         logger.info("Resuming: loading existing inventory")
         return load_json(meta_path)
 
-    pdfs = sorted(set(list(config.source_dir.rglob("*.pdf")) + list(config.source_dir.rglob("*.PDF"))))
+    candidates = sorted(set(list(config.source_dir.rglob("*.pdf")) + list(config.source_dir.rglob("*.PDF"))))
+    pdfs = [pdf for pdf in candidates if not _should_skip_pdf(config, pdf)]
     logger.info(f"Found {len(pdfs)} PDFs in {config.source_dir}")
 
     inventory = []

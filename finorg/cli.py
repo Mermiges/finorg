@@ -7,14 +7,17 @@ from finorg.config import PipelineConfig
 @click.command()
 @click.argument("source_dir", type=click.Path(exists=True, file_okay=False, path_type=Path))
 @click.option("-o", "--output", "output_dir", type=click.Path(path_type=Path), default=None,
-              help="Output directory. Default: SOURCE_DIR/organized")
-@click.option("--model", "deep_model", default="qwen2.5:72b-instruct-q4_K_M",
+              help="Output case root. Default: SOURCE_DIR/organized")
+@click.option("--model", "deep_model", default="qwen3.5:122b",
               help="Ollama model for classification")
-@click.option("--fast-model", default="qwen2.5:14b-instruct-q4_K_M",
+@click.option("--fast-model", default="qwen3.5:35b",
               help="Ollama model for boundary detection")
 @click.option("--ollama-url", default="http://localhost:11434")
 @click.option("--skip-ocr", is_flag=True, help="Skip OCR on scanned pages")
-@click.option("--ocr-engine", type=click.Choice(["marker", "docling", "pymupdf"]), default="pymupdf")
+@click.option("--ocr-engine", type=click.Choice(["lightonocr", "marker", "docling", "pymupdf"]), default="lightonocr")
+@click.option("--ocr-model", default="lightonai/LightOnOCR-2-1B", help="OCR model ID for LightOnOCR runs")
+@click.option("--ocr-cache-dir", type=click.Path(path_type=Path), default=None,
+              help="Optional Hugging Face cache dir for OCR weights")
 @click.option("--confidence", default=0.75, help="Auto-organize confidence threshold")
 @click.option("--resume", is_flag=True, help="Resume from last completed phase")
 @click.option("-v", "--verbose", is_flag=True)
@@ -28,8 +31,8 @@ from finorg.config import PipelineConfig
 @click.option("--gpu-deep", default=None, type=str,
               help="Comma-sep GPU IDs for deep model, e.g. '1,2,3,4'")
 def main(source_dir, output_dir, deep_model, fast_model, ollama_url, skip_ocr, ocr_engine,
-         confidence, resume, verbose, dry_run, start_phase, no_parallel, llm_workers, pdf_workers,
-         gpu_fast, gpu_deep):
+         ocr_model, ocr_cache_dir, confidence, resume, verbose, dry_run, start_phase, no_parallel,
+         llm_workers, pdf_workers, gpu_fast, gpu_deep):
     """Organize messy financial PDFs into clean labeled folders.
 
     SOURCE_DIR is the folder containing disorganized PDFs.
@@ -45,6 +48,8 @@ def main(source_dir, output_dir, deep_model, fast_model, ollama_url, skip_ocr, o
         ollama_url=ollama_url,
         skip_ocr=skip_ocr,
         ocr_engine=ocr_engine,
+        ocr_model=ocr_model,
+        ocr_cache_dir=ocr_cache_dir,
         confidence_threshold=confidence,
         resume=resume,
         verbose=verbose,

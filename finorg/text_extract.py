@@ -196,10 +196,30 @@ def extract_text_docling(pdf_path: Path) -> dict[int, str]:
         return {}
 
 
-def extract_text(pdf_path: Path, page_num: int, engine: str = "pymupdf") -> str:
+def extract_text_lightonocr(pdf_path: Path, page_num: int, model_id: str, cache_dir: str | None = None) -> str:
+    try:
+        from finorg.lighton_ocr import extract_pdf_page_text
+    except ImportError:
+        raise
+    return extract_pdf_page_text(pdf_path, page_num, model_id=model_id, cache_dir=cache_dir)
+
+
+def extract_text(
+    pdf_path: Path,
+    page_num: int,
+    engine: str = "pymupdf",
+    model_id: str = "lightonai/LightOnOCR-2-1B",
+    cache_dir: str | None = None,
+) -> str:
     """Extract text from a page. page_num is 1-indexed."""
     if engine == "pymupdf":
         return extract_text_pymupdf(pdf_path, page_num - 1)
+    elif engine == "lightonocr":
+        try:
+            return extract_text_lightonocr(pdf_path, page_num, model_id=model_id, cache_dir=cache_dir)
+        except ImportError:
+            logger.warning("LightOnOCR not available, falling back to pymupdf")
+            return extract_text_pymupdf(pdf_path, page_num - 1)
     elif engine == "marker":
         try:
             pages = extract_text_marker(pdf_path)

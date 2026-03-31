@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 
 import pymupdf
+from PIL import Image
 
 from finorg.utils import file_hash
 
@@ -49,6 +50,18 @@ def render_page_image(pdf_path: Path, page_num: int, dpi: int, output_path: Path
         pixmap = page.get_pixmap(matrix=mat, alpha=False)
         pixmap.save(str(output_path))
     return output_path
+
+
+def render_page_pil(pdf_path: Path, page_num: int, dpi: int = 200, longest_dimension: int = 1540) -> Image.Image:
+    """Render a PDF page to a PIL image following LightOnOCR guidance."""
+    with pymupdf.open(str(pdf_path)) as doc:
+        page = doc[page_num]
+        mat = pymupdf.Matrix(dpi / 72, dpi / 72)
+        pixmap = page.get_pixmap(matrix=mat, alpha=False)
+        image = Image.frombytes("RGB", [pixmap.width, pixmap.height], pixmap.samples)
+    if max(image.size) > longest_dimension:
+        image.thumbnail((longest_dimension, longest_dimension))
+    return image
 
 
 def split_pdf(source_path: Path, start_page: int, end_page: int, output_path: Path) -> Path:
